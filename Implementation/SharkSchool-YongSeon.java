@@ -4,11 +4,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.PriorityQueue;
 
 public class SharkSchool {
     public static int n;
     public static int[][] classRoom;
+    private static int[] colArr = new int[]{0, -1, 0, 1};
+    private static int[] rowArr = new int[]{-1, 0, 1, 0};
+    private static Map<Integer, int[]> favoriteNumberMap = new HashMap<>();
 
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -20,14 +25,52 @@ public class SharkSchool {
             int[] nums = Arrays.stream(br.readLine().split(" ")).mapToInt(Integer::parseInt).toArray();
 
             if (i==1) {
+                int myNum = nums[0];
+                int[] favoriteNumbers = Arrays.copyOfRange(nums, 1 ,nums.length);
+                favoriteNumberMap.put(myNum, favoriteNumbers);
+
                 classRoom[1][1] = nums[0];
                 continue;
             }
 
-            findFavoriteStudentSpot(nums[0], Arrays.copyOfRange(nums, 1 ,nums.length));
+            int myNum = nums[0];
+            int[] favoriteNumbers = Arrays.copyOfRange(nums, 1 ,nums.length);
+
+            favoriteNumberMap.put(myNum, favoriteNumbers);
+
+            findFavoriteStudentSpot(myNum, favoriteNumbers);
         }
 
-        System.out.println(Arrays.toString(classRoom));
+        System.out.println(calculateSatisfaction());
+    }
+
+    // 그 학생과 인접한 칸에 앉은 좋아하는 학생의 수를 구해야 한다. 그 값이 0이면 학생의 만족도는 0, 1이면 1, 2이면 10, 3이면 100, 4이면 1000이다.
+    public static int calculateSatisfaction() {
+        int totalSatisfaction = 0;
+
+        for (int row = 0; row < classRoom.length; row++) {
+            for (int col = 0; col < classRoom[row].length; col++) {
+                int myNum = classRoom[row][col];
+                int favoriteCnt = 0;
+
+                for(int rowIdx=0; rowIdx<rowArr.length; rowIdx++) {
+                    int nextRow = row+rowArr[rowIdx];
+                    int nextCol = col+colArr[rowIdx];
+
+                    if (validation(nextRow, nextCol)) {
+                        int targetNumber = classRoom[nextRow][nextCol];
+
+                        if(isFavorite(targetNumber, favoriteNumberMap.get(myNum))) {
+                            favoriteCnt++;
+                        }
+                    }
+                }
+
+                totalSatisfaction += (int) Math.pow(10, favoriteCnt - 1);
+            }
+        }
+
+        return totalSatisfaction;
     }
 
     public static class Spot implements Comparable<Spot>  {
@@ -35,92 +78,64 @@ public class SharkSchool {
 
         private int row;
 
+        private int emptyCount;
+
+        private int favoriteCount;
+
         @Override
         public int compareTo(Spot o) {
-
-            if (this.col == o.col) {
-                return o.row - this.row;
+            if(this.favoriteCount == o.favoriteCount) {
+                if(this.emptyCount == o.emptyCount) {
+                    if (this.row == o.row) {
+                        return this.col - o.col;
+                    } else {
+                        return this.row - o.row;
+                    }
+                } else {
+                    return o.emptyCount - this.emptyCount;
+                }
+            } else {
+                return o.favoriteCount - this.favoriteCount;
             }
-
-            return col;
         }
 
-        public Spot(int col, int row) {
+        public Spot(int row, int col, int favoriteCount, int emptyCount) {
             this.col = col;
             this.row = row;
+            this.favoriteCount = favoriteCount;
+            this.emptyCount = emptyCount;
         }
     }
 
     public static void findFavoriteStudentSpot(int myNumber, int[] favoriteNumbers) {
-        int maximumFavoriteNumbers = 0;
-        int maximumEmptySpotCnt = 0;
         PriorityQueue<Spot> favoriteQueue = new PriorityQueue<>();
 
-        for(int i=0; i<classRoom.length; i++) {
-            for(int j=0; j<classRoom[i].length; j++) {
-                int favoriteNumCnt = 0;
-                int emptySpots = 0;
-
-                int spot = classRoom[i][j];
+        for(int row=0; row<classRoom.length; row++) {
+            for(int col=0; col<classRoom[row].length; col++) {
+                int spot = classRoom[row][col];
 
                 if (spot != 0) {
                     continue;
                 }
 
-                if(j>0) {
-                    int targetNum = classRoom[i][j-1];
+                int favoriteCnt = 0;
+                int emptyCnt = 0;
 
-                    if (isFavorite(targetNum, favoriteNumbers)) {
-                        favoriteNumCnt += 1;
-                    } else if (targetNum == 0) {
-                        emptySpots += 1;
+                for(int spotIdx=0; spotIdx < colArr.length; spotIdx++) {
+                    int nextCol = col+colArr[spotIdx];
+                    int nextRow = row+rowArr[spotIdx];
+
+                    if(validation(nextCol, nextRow)) {
+                        int targetNum = classRoom[nextRow][nextCol];
+
+                        if(isFavorite(targetNum, favoriteNumbers)) {
+                            favoriteCnt ++;
+                        } else if(targetNum == 0) {
+                            emptyCnt ++;
+                        }
+
+                        favoriteQueue.add(new Spot(row, col, favoriteCnt, emptyCnt));
                     }
-                }
-
-                if(i>0) {
-                    int targetNum = classRoom[i-1][j];
-
-                    if (isFavorite(targetNum, favoriteNumbers)) {
-                        favoriteNumCnt += 1;
-                    } else if (targetNum == 0) {
-                        emptySpots += 1;
-                    }
-                }
-
-                if(j+1 < classRoom[i].length) {
-                    int targetNum = classRoom[i][j+1];
-
-                    if (isFavorite(targetNum, favoriteNumbers)) {
-                        favoriteNumCnt += 1;
-                    } else if (targetNum == 0) {
-                        emptySpots +=1;
-                    }
-                }
-
-                if(i+1 < classRoom.length) {
-                    int targetNum = classRoom[i+1][j];
-
-                    if (isFavorite(targetNum, favoriteNumbers)) {
-                        favoriteNumCnt += 1;
-                    } else if (targetNum == 0) {
-                        emptySpots +=1;
-                    }
-                }
-
-                if(maximumFavoriteNumbers < favoriteNumCnt) {
-                    favoriteQueue.clear();
-
-                    maximumFavoriteNumbers = favoriteNumCnt;
-                    favoriteQueue.add(new Spot(i, j));
-                } else if(maximumFavoriteNumbers == favoriteNumCnt && emptySpots > maximumEmptySpotCnt) {
-                    favoriteQueue.clear();
-
-                    maximumEmptySpotCnt = emptySpots;
-                    favoriteQueue.add(new Spot(i, j));
-                } else if (maximumFavoriteNumbers == favoriteNumCnt && emptySpots == maximumEmptySpotCnt) {
-                    favoriteQueue.clear();
-
-                    favoriteQueue.add(new Spot(i, j));
                 }
             }
         }
@@ -131,7 +146,7 @@ public class SharkSchool {
             System.out.println(Arrays.toString(classRoom));
         }
 
-        classRoom[mySpot.col][mySpot.row] = myNumber;
+        classRoom[mySpot.row][mySpot.col] = myNumber;
     }
 
     public static boolean isFavorite(int targetNum, int[] favoriteNumbers) {
@@ -142,5 +157,9 @@ public class SharkSchool {
         }
 
         return false;
+    }
+
+    public static boolean validation(int x, int y) {
+        return x>=0 && x<classRoom.length && y>=0 && y<classRoom.length;
     }
 }
