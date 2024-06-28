@@ -9,6 +9,8 @@ public class 아기상어2 {
     static int N, M;
     static int[] dirRow = new int[]{-1, -1, -1, 0, 1, 1, 1, 0};
     static int[] dirColumn = new int[]{-1, 0, 1, 1, 1, 0, -1, -1};
+    static boolean[][] visited;
+    static Queue<NowIndex> queue = new LinkedList<>();
 
     public static void main(String[] args) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -34,8 +36,6 @@ public class 아기상어2 {
             }
         }
         System.out.println(totalMax);
-
-
     }
 
     static class NowIndex {
@@ -51,8 +51,9 @@ public class 아기상어2 {
     }
 
     static int bfs(int row, int column) {
-        Queue<NowIndex> queue = new LinkedList<>();
+        visited = new boolean[N][M];
         queue.offer(new NowIndex(row, column, 0));
+        visited[row][column] = true;
 
         while (!queue.isEmpty()) {
             NowIndex poll = queue.poll();
@@ -63,15 +64,15 @@ public class 아기상어2 {
             if (map[nowRow][nowColumn] == 1) {
                 queue.clear();
                 return nowDistance;
-
             }
 
             for (int i = 0; i < dirRow.length; i++) {
                 int nextRow = nowRow + dirRow[i];
                 int nextColumn = nowColumn + dirColumn[i];
 
-                if (validatate(nextRow, nextColumn)) {
+                if (validatate(nextRow, nextColumn) && !visited[nextRow][nextColumn]) {
                     queue.offer(new NowIndex(nextRow, nextColumn, nowDistance + 1));
+                    visited[nextRow][nextColumn] = true;
                 }
             }
         }
