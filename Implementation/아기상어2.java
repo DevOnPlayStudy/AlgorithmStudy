@@ -4,7 +4,6 @@ import java.io.*;
 import java.util.*;
 
 public class 아기상어2 {
-
     static int[][] map;
     static int N, M;
     static int[] dirRow = new int[]{-1, -1, -1, 0, 1, 1, 1, 0};
