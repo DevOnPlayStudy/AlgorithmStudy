@@ -1,6 +1,5 @@
-package implementation3;
+package implementation3.junseongkim;
 
-import java.util.*;
 import java.io.*;
 
 public class 오목 {
