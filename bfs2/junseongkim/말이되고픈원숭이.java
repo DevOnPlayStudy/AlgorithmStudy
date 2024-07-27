@@ -1,4 +1,4 @@
-package bfs2;
+package bfs2.junseongkim;
 
 import java.io.BufferedReader;
 import java.io.IOException;
